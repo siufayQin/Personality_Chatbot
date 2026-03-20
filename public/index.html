@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>ESFP · Dify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --sidebar-bg: #f2f4f7;
+      --main-bg: #ffffff;
+      --text: #101828;
+      --text-secondary: #667085;
+      --border: #e4e7ec;
+      --blue: #155eef;
+      --blue-hover: #004eeb;
+      --blue-soft: rgba(21, 94, 239, 0.08);
+      --bot-avatar-bg: #ffedd5;
+      --bot-stroke: #ea580c;
+      --user-bubble: #155eef;
+      --assistant-bubble: #f2f4f7;
+      --error: #d92d20;
+      --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+      --shadow-input: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+      --shadow-pop: 0 12px 32px -8px rgba(16, 24, 40, 0.18);
+      --radius-shell: 24px;
+      --radius-pill: 999px;
+      --sidebar-w: 260px;
+    }
+
+    .bot-avatar--esfp { --bot-avatar-bg: #ffedd5; --bot-stroke: #ea580c; }
+    .bot-avatar--isfj { --bot-avatar-bg: #e0f2fe; --bot-stroke: #0284c7; }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    html { -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      font-size: 15px;
+      line-height: 1.5;
+      color: var(--text);
+      background: #eceff3;
+      padding: clamp(12px, 2.5vw, 24px);
+      min-height: 100dvh;
+    }
+
+    .app-shell {
+      display: flex;
+      max-width: 1200px;
+      height: min(100dvh - 24px, 900px);
+      min-height: 520px;
+      margin: 0 auto;
+      background: var(--main-bg);
+      border-radius: var(--radius-shell);
+      box-shadow: 0 24px 48px -12px rgba(16, 24, 40, 0.12);
+      overflow: hidden;
+      border: 1px solid rgba(228, 231, 236, 0.9);
+      position: relative;
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+      transition: transform 0.22s ease, width 0.22s ease;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 18px 12px 16px 16px;
+      position: relative;
+    }
+
+    .bot-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--bot-avatar-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .bot-avatar svg path[stroke] { stroke: var(--bot-stroke); }
+    .bot-avatar svg circle { fill: var(--bot-stroke); }
+
+    .bot-meta { min-width: 0; flex: 1; padding-top: 1px; }
+    .bot-name {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .bot-sub {
+      margin: 2px 0 0;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .sidebar-header-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-toggle {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .sidebar-toggle:hover { background: rgba(16, 24, 40, 0.06); color: var(--text); }
+
+    .agent-switcher-btn {
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: 0;
+    }
+    .agent-switcher-btn[aria-expanded="true"] {
+      background: rgba(21, 94, 239, 0.1);
+      color: var(--blue);
+    }
+
+    .sidebar-close-mobile {
+      display: none;
+    }
+
+    .agent-picker {
+      position: absolute;
+      top: calc(100% - 4px);
+      left: 12px;
+      right: 12px;
+      background: var(--main-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-pop);
+      z-index: 50;
+      padding: 8px;
+      display: none;
+    }
+    .agent-picker.open { display: block; }
+
+    .agent-picker-h {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-secondary);
+      padding: 6px 8px 8px;
+    }
+
+    .agent-option {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 10px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+      color: var(--text);
+      transition: background 0.12s;
+    }
+    .agent-option:hover:not(:disabled) { background: #f2f4f7; }
+    .agent-option.active {
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+    .agent-option:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    .agent-option-name { font-weight: 600; font-size: 14px; }
+    .agent-option-sub {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .agent-option-check {
+      margin-left: auto;
+      font-size: 14px;
+      color: var(--blue);
+      opacity: 0;
+    }
+    .agent-option.active .agent-option-check { opacity: 1; }
+    .agent-option-warn { font-size: 10px; color: var(--error); margin-top: 2px; }
+
+    .new-chat-btn {
+      margin: 0 14px 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: calc(100% - 28px);
+      padding: 10px 14px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--blue);
+      background: var(--main-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+    }
+    .new-chat-btn:hover {
+      border-color: rgba(21, 94, 239, 0.35);
+      background: #fafbff;
+      box-shadow: 0 4px 12px rgba(21, 94, 239, 0.08);
+    }
+
+    .sidebar-spacer { flex: 1; }
+
+    .sidebar-footer {
+      padding: 14px 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:hover {
+      background: rgba(16, 24, 40, 0.06);
+      color: var(--text);
+    }
+
+    .powered {
+      font-size: 11px;
+      color: #98a2b3;
+      letter-spacing: 0.02em;
+    }
+    .powered strong { color: var(--text-secondary); font-weight: 600; }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--main-bg);
+      position: relative;
+    }
+
+    .chat-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px clamp(16px, 3vw, 32px) 120px;
+      scroll-behavior: smooth;
+    }
+
+    .empty-state {
+      height: 100%;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--text-secondary);
+      padding: 24px;
+    }
+    .empty-state p {
+      margin: 0;
+      font-size: 14px;
+      max-width: 300px;
+      line-height: 1.6;
+    }
+
+    .msg-row {
+      display: flex;
+      margin-bottom: 16px;
+      animation: fadeIn 0.2s ease;
+    }
+    .msg-row--user { justify-content: flex-end; }
+    .msg-row--assistant { justify-content: flex-start; }
+
+    .bubble {
+      max-width: min(92%, 560px);
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 15px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble--user {
+      background: var(--user-bubble);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+    }
+    .bubble--assistant {
+      background: var(--assistant-bubble);
+      color: var(--text);
+      border-bottom-left-radius: 6px;
+    }
+    .bubble--error {
+      background: #fef3f2;
+      color: var(--error);
+      border: 1px solid #fecdca;
+    }
+    .bubble--typing { color: var(--text-secondary); font-style: italic; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .input-dock {
+      flex-shrink: 0;
+      padding: 16px clamp(16px, 3vw, 28px) 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0) 0%, #fff 28%);
+    }
+
+    .input-inner {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 6px 8px 6px 18px;
+      background: var(--main-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      box-shadow: var(--shadow-input);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input-inner:focus-within {
+      border-color: rgba(21, 94, 239, 0.4);
+      box-shadow: var(--shadow-input), 0 0 0 3px var(--blue-soft);
+    }
+
+    #q {
+      flex: 1;
+      min-height: 44px;
+      max-height: 140px;
+      padding: 10px 4px 10px 0;
+      border: none;
+      outline: none;
+      resize: none;
+      font: inherit;
+      color: var(--text);
+      background: transparent;
+      line-height: 1.45;
+    }
+    #q::placeholder { color: #98a2b3; }
+
+    .send-fab {
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 50%;
+      background: var(--blue);
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, transform 0.1s;
+      margin-bottom: 1px;
+    }
+    .send-fab:hover:not(:disabled) { background: var(--blue-hover); }
+    .send-fab:active:not(:disabled) { transform: scale(0.96); }
+    .send-fab:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .mobile-open { display: none; }
+
+    .picker-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 45;
+      background: transparent;
+    }
+    .picker-backdrop.show { display: block; }
+
+    @media (max-width: 720px) {
+      body { padding: 8px; }
+      .app-shell {
+        height: calc(100dvh - 16px);
+        min-height: unset;
+        border-radius: 16px;
+      }
+      .sidebar {
+        position: absolute;
+        z-index: 20;
+        height: 100%;
+        box-shadow: 8px 0 32px rgba(16, 24, 40, 0.12);
+      }
+      .app-shell.sidebar-hidden .sidebar {
+        transform: translateX(-100%);
+        width: var(--sidebar-w);
+      }
+      .mobile-open { display: flex; }
+      .sidebar-close-mobile { display: flex; }
+      .chat-scroll { padding-top: 52px; }
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .msg-row { animation: none; }
+      .sidebar { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="picker-backdrop" id="pickerBackdrop" aria-hidden="true"></div>
+
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar" aria-label="侧栏">
+      <div class="sidebar-header">
+        <div class="bot-avatar bot-avatar--esfp" id="botAvatar" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2a7 7 0 0 1 7 7v1h1a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-1.1A5.002 5.002 0 0 1 12 22a5 5 0 0 1-4.9-4H6a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h1V9a7 7 0 0 1 7-7Z" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="9" cy="11" r="1"/>
+            <circle cx="15" cy="11" r="1"/>
+          </svg>
+        </div>
+        <div class="bot-meta">
+          <h1 class="bot-name" id="botName">ESFP</h1>
+          <p class="bot-sub" id="botSub">表演者 · 聊天助手</p>
+        </div>
+        <div class="sidebar-header-actions">
+          <button type="button" class="sidebar-toggle agent-switcher-btn" id="agentSwitcher" title="切换智能体" aria-label="切换智能体" aria-expanded="false" aria-haspopup="listbox">‹</button>
+          <button type="button" class="sidebar-toggle sidebar-close-mobile" id="closeSidebar" title="收起侧栏" aria-label="收起侧栏">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 6l-6 6 6 6"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="agent-picker" id="agentPicker" role="listbox" aria-labelledby="agentPickerLabel">
+          <div class="agent-picker-h" id="agentPickerLabel">选择智能体</div>
+          <div id="agentList"></div>
+        </div>
+      </div>
+
+      <button type="button" class="new-chat-btn" id="newChat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M5 12h14"/>
+        </svg>
+        开启新对话
+      </button>
+
+      <div class="sidebar-spacer"></div>
+
+      <div class="sidebar-footer">
+        <button type="button" class="icon-btn" id="hintBtn" title="说明" aria-label="使用说明">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 10h4M10 8h4M18 14h4"/>
+          </svg>
+        </button>
+        <span class="powered">POWERED BY <strong>Dify</strong></span>
+      </div>
+    </aside>
+
+    <main class="main" id="mainArea">
+      <button type="button" class="sidebar-toggle mobile-open" id="openSidebar" style="position:absolute; top:12px; left:12px; z-index:10; background:#fff; border:1px solid var(--border); box-shadow:var(--shadow-sm);" title="打开菜单" aria-label="打开菜单">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 8h16M4 16h16"/>
+        </svg>
+      </button>
+
+      <div class="chat-scroll" id="chatScroll" aria-live="polite">
+        <div class="empty-state" id="emptyState">
+          <p id="emptyText">向 ESFP 打个招呼吧～<br />支持多轮对话；点左上角 ‹ 切换其它性格智能体。</p>
+        </div>
+        <div id="messages" hidden></div>
+      </div>
+
+      <div class="input-dock">
+        <div class="input-inner">
+          <label class="sr-only" for="q">输入消息</label>
+          <textarea id="q" rows="1" placeholder="和 ESFP 聊天" maxlength="8000"></textarea>
+          <button type="button" class="send-fab" id="send" title="发送" aria-label="发送">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const STORAGE_AGENT = 'dify_selected_agent';
+    const STORAGE_CONVS = 'dify_conversations_v1';
+    const userId = 'u-' + Math.random().toString(36).slice(2, 12);
+
+    let agentsCatalog = [];
+    let defaultAgentId = 'esfp';
+    let currentAgentId = localStorage.getItem(STORAGE_AGENT) || 'esfp';
+
+    let conversationByAgent = {};
+    try {
+      conversationByAgent = JSON.parse(localStorage.getItem(STORAGE_CONVS) || '{}') || {};
+    } catch {
+      conversationByAgent = {};
+    }
+
+    function persistConversations() {
+      localStorage.setItem(STORAGE_CONVS, JSON.stringify(conversationByAgent));
+    }
+
+    function getConversationId() {
+      return conversationByAgent[currentAgentId] || '';
+    }
+
+    function setConversationId(cid) {
+      if (cid) conversationByAgent[currentAgentId] = cid;
+      persistConversations();
+    }
+
+    function clearConversationIdCurrent() {
+      delete conversationByAgent[currentAgentId];
+      persistConversations();
+    }
+
+    function getAgentMeta(id) {
+      return agentsCatalog.find((a) => a.id === id) || { id, name: id.toUpperCase(), subtitle: '', configured: false };
+    }
+
+    function applyAgentTheme(id) {
+      const el = document.getElementById('botAvatar');
+      el.classList.remove('bot-avatar--esfp', 'bot-avatar--isfj');
+      if (id === 'isfj') el.classList.add('bot-avatar--isfj');
+      else el.classList.add('bot-avatar--esfp');
+    }
+
+    function updateAgentUI() {
+      const m = getAgentMeta(currentAgentId);
+      document.getElementById('botName').textContent = m.name;
+      document.getElementById('botSub').textContent = m.subtitle || '聊天助手';
+      applyAgentTheme(currentAgentId);
+      const ph = '和 ' + m.name + ' 聊天';
+      document.getElementById('q').placeholder = ph;
+      document.querySelector('label[for="q"]').textContent = ph;
+      document.title = m.name + ' · Dify';
+      document.getElementById('emptyText').innerHTML =
+        '向 <strong>' +
+        escapeHtml(m.name) +
+        '</strong> 打个招呼吧～<br />点侧栏左上角 <strong>‹</strong> 可切换智能体；每个性格对应独立 Dify 密钥。';
+      renderAgentList();
+    }
+
+    function escapeHtml(s) {
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    function closePicker() {
+      document.getElementById('agentPicker').classList.remove('open');
+      document.getElementById('pickerBackdrop').classList.remove('show');
+      document.getElementById('agentSwitcher').setAttribute('aria-expanded', 'false');
+    }
+
+    function openPicker() {
+      renderAgentList();
+      document.getElementById('agentPicker').classList.add('open');
+      document.getElementById('pickerBackdrop').classList.add('show');
+      document.getElementById('agentSwitcher').setAttribute('aria-expanded', 'true');
+    }
+
+    function togglePicker() {
+      const p = document.getElementById('agentPicker');
+      if (p.classList.contains('open')) closePicker();
+      else openPicker();
+    }
+
+    function renderAgentList() {
+      const host = document.getElementById('agentList');
+      host.innerHTML = '';
+      agentsCatalog.forEach((a) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'agent-option' + (a.id === currentAgentId ? ' active' : '');
+        btn.setAttribute('role', 'option');
+        btn.setAttribute('aria-selected', a.id === currentAgentId ? 'true' : 'false');
+        if (!a.configured) btn.disabled = true;
+        btn.innerHTML =
+          '<div><div class="agent-option-name">' +
+          escapeHtml(a.name) +
+          '</div><div class="agent-option-sub">' +
+          escapeHtml(a.subtitle) +
+          '</div>' +
+          (!a.configured ? '<div class="agent-option-warn">服务端未配置密钥</div>' : '') +
+          '</div><span class="agent-option-check" aria-hidden="true">✓</span>';
+        btn.onclick = () => {
+          if (!a.configured) return;
+          selectAgent(a.id);
+          closePicker();
+        };
+        host.appendChild(btn);
+      });
+    }
+
+    function selectAgent(id) {
+      if (id === currentAgentId) return;
+      currentAgentId = id;
+      localStorage.setItem(STORAGE_AGENT, id);
+      clearChat(false);
+      updateAgentUI();
+    }
+
+    const state = { list: [], typingId: null };
+
+    const els = {
+      shell: document.getElementById('appShell'),
+      chatScroll: document.getElementById('chatScroll'),
+      emptyState: document.getElementById('emptyState'),
+      messages: document.getElementById('messages'),
+      q: document.getElementById('q'),
+      send: document.getElementById('send'),
+    };
+
+    function scrollToBottom() {
+      requestAnimationFrame(() => {
+        els.chatScroll.scrollTop = els.chatScroll.scrollHeight;
+      });
+    }
+
+    function syncEmpty() {
+      const has = state.list.length > 0;
+      els.emptyState.hidden = has;
+      els.messages.hidden = !has;
+    }
+
+    function renderMessage(m) {
+      const row = document.createElement('div');
+      row.className = 'msg-row msg-row--' + (m.role === 'user' ? 'user' : 'assistant');
+      row.dataset.id = m.id;
+      const bubble = document.createElement('div');
+      let cls = 'bubble bubble--' + (m.role === 'user' ? 'user' : 'assistant');
+      if (m.error) cls += ' bubble--error';
+      if (m.typing) cls += ' bubble--typing';
+      bubble.className = cls;
+      bubble.textContent = m.content;
+      row.appendChild(bubble);
+      els.messages.appendChild(row);
+      scrollToBottom();
+    }
+
+    function appendMessage(m) {
+      state.list.push(m);
+      syncEmpty();
+      renderMessage(m);
+    }
+
+    function setTyping(on) {
+      if (on) {
+        const id = 't-' + Date.now();
+        state.typingId = id;
+        appendMessage({ id, role: 'assistant', content: '思考中…', typing: true });
+        return id;
+      }
+      if (state.typingId) {
+        const row = els.messages.querySelector('[data-id="' + state.typingId + '"]');
+        if (row) row.remove();
+        state.list = state.list.filter((x) => x.id !== state.typingId);
+        state.typingId = null;
+        if (state.list.length === 0) syncEmpty();
+      }
+    }
+
+    /** @param {boolean} focusInput */
+    function clearChat(focusInput) {
+      clearConversationIdCurrent();
+      state.list = [];
+      state.typingId = null;
+      els.messages.innerHTML = '';
+      syncEmpty();
+      els.q.value = '';
+      autosize();
+      if (focusInput !== false) els.q.focus();
+    }
+
+    function autosize() {
+      const ta = els.q;
+      ta.rows = 1;
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 140) + 'px';
+    }
+
+    async function send() {
+      const query = els.q.value.trim();
+      if (!query || els.send.disabled) return;
+      const meta = getAgentMeta(currentAgentId);
+      if (!meta.configured) {
+        alert('当前智能体未在服务端配置 API 密钥，请检查 .env 中的 DIFY_API_KEY_' + currentAgentId.toUpperCase());
+        return;
+      }
+
+      appendMessage({ id: 'u-' + Date.now(), role: 'user', content: query });
+      els.q.value = '';
+      autosize();
+
+      els.send.disabled = true;
+      setTyping(true);
+
+      try {
+        const r = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query,
+            agent: currentAgentId,
+            conversation_id: getConversationId(),
+            user: userId,
+          }),
+        });
+        const j = await r.json();
+        setTyping(false);
+
+        if (!r.ok) {
+          let detail = '';
+          if (j.detail) detail = '\n\n' + JSON.stringify(j.detail, null, 2);
+          appendMessage({
+            id: 'e-' + Date.now(),
+            role: 'assistant',
+            content: (j.error || r.statusText) + detail,
+            error: true,
+          });
+          return;
+        }
+        if (j.conversation_id) setConversationId(j.conversation_id);
+        appendMessage({
+          id: 'a-' + Date.now(),
+          role: 'assistant',
+          content: j.answer || '（无内容）',
+        });
+      } catch (e) {
+        setTyping(false);
+        appendMessage({
+          id: 'e-' + Date.now(),
+          role: 'assistant',
+          content: e.message,
+          error: true,
+        });
+      } finally {
+        els.send.disabled = false;
+        scrollToBottom();
+      }
+    }
+
+    function toggleSidebar(hide) {
+      els.shell.classList.toggle('sidebar-hidden', hide);
+    }
+
+    document.getElementById('newChat').onclick = () => clearChat(true);
+
+    document.getElementById('agentSwitcher').onclick = (e) => {
+      e.stopPropagation();
+      togglePicker();
+    };
+
+    document.getElementById('pickerBackdrop').onclick = closePicker;
+
+    document.getElementById('openSidebar').onclick = () => toggleSidebar(false);
+    document.getElementById('closeSidebar').onclick = () => toggleSidebar(true);
+
+    document.getElementById('hintBtn').onclick = () => {
+      alert(
+        '· API Key 只在服务器环境变量中，浏览器拿不到。\n\n· 侧栏「‹」切换 ESFP / ISFJ 等不同 Dify 应用（各自独立密钥与会话）。\n\n· 「开启新对话」会清空当前性格的会话上下文。',
+      );
+    };
+
+    els.send.onclick = send;
+    els.q.addEventListener('input', autosize);
+    els.q.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      if (!window.matchMedia('(max-width: 720px)').matches) {
+        els.shell.classList.remove('sidebar-hidden');
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePicker();
+    });
+
+    fetch('/api/agents')
+      .then((r) => r.json())
+      .then((data) => {
+        agentsCatalog = data.agents || [];
+        defaultAgentId = data.defaultAgent || 'esfp';
+        if (!agentsCatalog.some((a) => a.id === currentAgentId)) {
+          currentAgentId = defaultAgentId;
+          localStorage.setItem(STORAGE_AGENT, currentAgentId);
+        }
+        updateAgentUI();
+      })
+      .catch(() => {
+        agentsCatalog = [
+          { id: 'esfp', name: 'ESFP', subtitle: '表演者 · 聊天助手', configured: true },
+          { id: 'isfj', name: 'ISFJ', subtitle: '守护者 · 聊天助手', configured: false },
+        ];
+        updateAgentUI();
+      });
+
+    fetch('/api/health')
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.hasAnyKey) {
+          const p = document.getElementById('emptyText');
+          if (p) {
+            p.innerHTML +=
+              '<br /><span style="color:#d92d20;font-size:13px;">未检测到任何已配置的智能体密钥，请配置 .env（见 .env.example）。</span>';
+          }
+        }
+      })
+      .catch(() => {});
+
+    syncEmpty();
+    autosize();
+  </script>
+</body>
+</html>
