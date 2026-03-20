@@ -44,20 +44,26 @@ Out of personal interest, this project is also deployed on **Render** for easy t
 
 ### Quick start (this repo)
 
-**Full checklist (Dify + env + deploy):** see **[具体实现步骤.md](./具体实现步骤.md)** (Chinese).
+**Dify (once per persona)**  
+Create a *Chat assistant* (or any app that exposes `POST /chat-messages`). Add prompts / knowledge base. In **API access**, copy the base URL (e.g. `https://api.dify.ai/v1`) and create an API key per app.
+
+**Local run**
 
 ```bash
-cd personality-chatbot-dify-starter   # or your clone root if this folder is the repo root
+cd personality-chatbot-dify-starter   # or your repo root if this folder is the project root
 npm install
 cp .env.example .env                  # Windows: copy .env.example .env
-# Edit .env: DIFY_API_URL, DIFY_API_KEY_ESFP / DIFY_API_KEY, DIFY_API_KEY_ISFJ, ...
+# Edit .env: DIFY_API_URL, DIFY_API_KEY_ESFP or DIFY_API_KEY, DIFY_API_KEY_ISFJ, ...
 npm start
 ```
 
 Open <http://localhost:3000>.
 
-- **Do not commit `.env`**; only commit `.env.example`.  
-- Add more personas in `server.js` → `AGENT_REGISTRY`, then set `DIFY_API_KEY_<ID>` in the environment.
+- **Never commit `.env`**; only commit `.env.example`.  
+- Add personas in `server.js` → `AGENT_REGISTRY`, then set `DIFY_API_KEY_<UPPERCASE_ID>` in `.env` or your host’s environment.
+
+**Deploy (example: Render)**  
+Push this repo to GitHub → New **Web Service** → connect the repo → **Build** `npm install` → **Start** `node server.js` → add the same variables as in `.env.example` under **Environment** → deploy.
 
 ### Acknowledgements
 
@@ -106,12 +112,26 @@ MIT
 
 ### 使用方式
 
-1. 在 **Dify** 为每个人格创建「聊天助手」类应用，配置提示词与知识库。  
-2. 在应用的「访问 API」中创建密钥，写入本机 **`.env`**（或部署平台的 Environment）。  
-3. 本地：`npm install` → 配置 `.env` → `npm start` → 浏览器访问端口（见上）。  
-4. 从零到上线（含 GitHub / **Render**）：见 **[具体实现步骤.md](./具体实现步骤.md)**。  
+**Dify（每个人格各一个应用）**  
+在 Dify 为每个人格创建可与 `chat-messages` 对接的应用（如「聊天助手」），配置提示词与知识库。在 **访问 API** 中复制 API 地址（如 `https://api.dify.ai/v1`），并为每个应用各创建一把 **API 密钥**。
 
-**扩展新人格**：编辑 `server.js` 中的 `AGENT_REGISTRY`，并增加环境变量 `DIFY_API_KEY_<大写ID>`。
+**本机运行**
+
+```bash
+cd personality-chatbot-dify-starter
+npm install
+copy .env.example .env    # Mac/Linux: cp .env.example .env
+# 编辑 .env：DIFY_API_URL、DIFY_API_KEY_ESFP 或 DIFY_API_KEY、DIFY_API_KEY_ISFJ 等
+npm start
+```
+
+浏览器打开 **http://localhost:3000**（默认端口见 `.env` 的 `PORT`）。
+
+- **切勿**将 **`.env`** 提交到 Git，只提交 **`.env.example`**。  
+- **扩展新人格**：修改 `server.js` 的 `AGENT_REGISTRY`，并在环境变量中增加 `DIFY_API_KEY_<大写ID>`。
+
+**部署示例（Render）**  
+把仓库推到 GitHub → Render **New Web Service** 绑定仓库 → **Build**：`npm install` → **Start**：`node server.js` → 在 **Environment** 中配置与 `.env.example` 相同的变量 → 保存部署。若项目在子目录，填写对应的 **Root Directory**。
 
 ### 致谢
 
